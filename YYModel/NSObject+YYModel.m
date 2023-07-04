@@ -244,7 +244,7 @@ static force_inline NSDate *YYNSDateFromString(__unsafe_unretained NSString *str
 
 
 /// Get the 'NSBlock' class.
-static force_inline Class YYNSBlockClass() {
+static force_inline Class YYNSBlockClass(void) {
     static Class cls;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -269,7 +269,7 @@ static force_inline Class YYNSBlockClass() {
  
  length: 20/24/25
  */
-static force_inline NSDateFormatter *YYISODateFormatter() {
+static force_inline NSDateFormatter *YYISODateFormatter(void) {
     static NSDateFormatter *formatter = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -909,8 +909,8 @@ static void ModelSetValueForProperty(__unsafe_unretained id model,
                                         if (!cls) cls = meta->_genericCls; // for xcode code coverage
                                     }
                                     NSObject *newOne = [cls new];
-                                    [newOne yy_modelSetWithDictionary:one];
-                                    if (newOne) [objectArr addObject:newOne];
+                                    BOOL isValid = [newOne yy_modelSetWithDictionary:one];
+                                    if (newOne && isValid) [objectArr addObject:newOne];
                                 }
                             }
                             ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta->_setter, objectArr);
@@ -949,8 +949,8 @@ static void ModelSetValueForProperty(__unsafe_unretained id model,
                                         if (!cls) cls = meta->_genericCls; // for xcode code coverage
                                     }
                                     NSObject *newOne = [cls new];
-                                    [newOne yy_modelSetWithDictionary:(id)oneValue];
-                                    if (newOne) dic[oneKey] = newOne;
+                                    BOOL isValid = [newOne yy_modelSetWithDictionary:(id)oneValue];
+                                    if (newOne && isValid) dic[oneKey] = newOne;
                                 }
                             }];
                             ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta->_setter, dic);
@@ -984,8 +984,8 @@ static void ModelSetValueForProperty(__unsafe_unretained id model,
                                     if (!cls) cls = meta->_genericCls; // for xcode code coverage
                                 }
                                 NSObject *newOne = [cls new];
-                                [newOne yy_modelSetWithDictionary:one];
-                                if (newOne) [set addObject:newOne];
+                                BOOL isValid = [newOne yy_modelSetWithDictionary:one];
+                                if (newOne && isValid) [set addObject:newOne];
                             }
                         }
                         ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta->_setter, set);
@@ -1062,9 +1062,9 @@ static void ModelSetValueForProperty(__unsafe_unretained id model,
                 
             case YYEncodingTypeBlock: {
                 if (isNull) {
-                    ((void (*)(id, SEL, void (^)()))(void *) objc_msgSend)((id)model, meta->_setter, (void (^)())NULL);
+                    ((void (*)(id, SEL, void (^)(void)))(void *) objc_msgSend)((id)model, meta->_setter, (void (^)(void))NULL);
                 } else if ([value isKindOfClass:YYNSBlockClass()]) {
-                    ((void (*)(id, SEL, void (^)()))(void *) objc_msgSend)((id)model, meta->_setter, (void (^)())value);
+                    ((void (*)(id, SEL, void (^)(void)))(void *) objc_msgSend)((id)model, meta->_setter, (void (^)(void))value);
                 }
             } break;
                 
@@ -1205,6 +1205,7 @@ static id ModelToJSONObjectRecursive(NSObject *model) {
     if ([model isKindOfClass:[NSAttributedString class]]) return ((NSAttributedString *)model).string;
     if ([model isKindOfClass:[NSDate class]]) return [YYISODateFormatter() stringFromDate:(id)model];
     if ([model isKindOfClass:[NSData class]]) return nil;
+    if ([model isKindOfClass:[NSValue class]]) return model;
     
     
     _YYModelMeta *modelMeta = [_YYModelMeta metaWithClass:[model class]];
